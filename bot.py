@@ -14,8 +14,6 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
-# ── Mappings ──────────────────────────────────────────────────────────────────
-
 MOOD_QUERIES = {
     "happy":     ("😄 Радостное",    ["комедия фильм", "веселый мультфильм"]),
     "sad":       ("😢 Грустное",     ["мелодрама фильм", "драма трогательный"]),
@@ -45,10 +43,8 @@ PLACE_QUERIES = {
     ),
 }
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _esc(text: str) -> str:
-    """Экранирует спецсимволы HTML."""
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
@@ -103,7 +99,6 @@ def more_keyboard(context_key: str):
         [InlineKeyboardButton("🏠 В главное меню", callback_data="menu:main")],
     ])
 
-# ── Handlers ──────────────────────────────────────────────────────────────────
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -146,7 +141,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await handle_recommendation(query, context, "place", place_key, page=0)
 
     elif data.startswith("more:"):
-        # more:<type>:<key>:<page>
         parts = data.split(":")
         kind, key, page_str = parts[1], parts[2], parts[3]
         await handle_recommendation(query, context, kind, key, page=int(page_str))
@@ -189,7 +183,6 @@ async def handle_recommendation(query, context, kind: str, key: str, page: int):
         disable_web_page_preview=True,
     )
 
-# ── Main ──────────────────────────────────────────────────────────────────────
 
 def main():
     token = os.getenv("TELEGRAM_TOKEN")

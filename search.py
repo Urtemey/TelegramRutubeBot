@@ -20,8 +20,6 @@ HEADERS = {
 _vk_executor = ThreadPoolExecutor(max_workers=1)
 
 
-# ── Rutube (JSON API, no auth) ─────────────────────────────────────────────────
-
 async def search_rutube(query: str, count: int = 10) -> list[dict]:
     params = {"query": query, "format": "json", "page": 1}
     try:
@@ -57,10 +55,7 @@ async def search_rutube(query: str, count: int = 10) -> list[dict]:
     return results
 
 
-# ── VK Video (Selenium + Chrome profile) ──────────────────────────────────────
-
 def _get_chrome_driver():
-    
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
@@ -89,8 +84,7 @@ def _get_chrome_driver():
 
 
 def _parse_duration(text: str) -> int:
-    """Парсит '1:35:23' или '55:12' в минуты."""
-    text = text.strip().splitlines()[-1].strip()  # берём последнюю строку (убираем 'FHD' и пр.)
+    text = text.strip().splitlines()[-1].strip()
     parts = text.split(":")
     try:
         if len(parts) == 2:
@@ -103,7 +97,6 @@ def _parse_duration(text: str) -> int:
 
 
 def _scrape_vk_sync(query: str, count: int = 10) -> list[dict]:
-    """Синхронный скрейпинг VK Video (запускается в отдельном потоке)."""
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
@@ -116,7 +109,6 @@ def _scrape_vk_sync(query: str, count: int = 10) -> list[dict]:
         driver = _get_chrome_driver()
         driver.get(url)
 
-        # Ждём появления карточек по реальному data-testid
         wait = WebDriverWait(driver, 12)
         wait.until(EC.presence_of_element_located(
             (By.CSS_SELECTOR, '[data-testid="video_card_layout"]')
@@ -127,19 +119,16 @@ def _scrape_vk_sync(query: str, count: int = 10) -> list[dict]:
 
         for card in cards[:count * 3]:
             try:
-                # Все ссылки на видео (формат vkvideo.ru/video...)
                 video_links = card.find_elements(
                     By.CSS_SELECTOR, 'a[href*="vkvideo.ru/video"]'
                 )
                 if not video_links:
                     continue
 
-                # Первая ссылка — превью (в тексте содержит длительность)
                 thumb_link = video_links[0]
                 url_video = thumb_link.get_attribute("href") or ""
                 duration_min = _parse_duration(thumb_link.text)
 
-                # Вторая ссылка — заголовок (если есть), иначе тоже первая
                 title_link = video_links[1] if len(video_links) > 1 else video_links[0]
                 title = title_link.text.strip()
                 if not title:
@@ -173,7 +162,6 @@ def _scrape_vk_sync(query: str, count: int = 10) -> list[dict]:
 
 
 async def search_vk(query: str, count: int = 5) -> list[dict]:
-    """Асинхронная обёртка с жёстким таймаутом 35 секунд."""
     profile_path = os.getenv("CHROME_PROFILE_PATH", "").strip()
     if not profile_path:
         return []
@@ -192,8 +180,6 @@ async def search_vk(query: str, count: int = 5) -> list[dict]:
         return []
 
 
-# ── Combined ───────────────────────────────────────────────────────────────────
-
 async def search_all(query: str, count: int = 5) -> list[dict]:
     rutube_task = asyncio.create_task(search_rutube(query, count))
     vk_task = asyncio.create_task(search_vk(query, count))
@@ -203,7 +189,6 @@ async def search_all(query: str, count: int = 5) -> list[dict]:
         fallback = query.split()[0] if " " in query else query
         rutube = await search_rutube(fallback, count)
 
-    # Чередуем: Rutube, VK, Rutube, VK...
     combined = []
     for i in range(max(len(rutube), len(vk))):
         if i < len(rutube):
