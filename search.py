@@ -60,7 +60,7 @@ async def search_rutube(query: str, count: int = 10) -> list[dict]:
 # ── VK Video (Selenium + Chrome profile) ──────────────────────────────────────
 
 def _get_chrome_driver():
-    """Создаёт Chrome WebDriver с профилем пользователя (если задан)."""
+    
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.chrome.service import Service
